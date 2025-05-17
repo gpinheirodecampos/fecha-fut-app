@@ -15,7 +15,7 @@ export default function GruposLayout() {  return (
     >      <Stack.Screen 
         name="index" 
         options={{
-          headerShown: true,
+          headerShown: false,
           title: "Grupos",
           headerTitleStyle: {
             fontSize: 24,

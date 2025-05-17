@@ -54,7 +54,10 @@ export default function GruposScreen() {
   };
   
   return (
-    <View style={[styles.container]}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={styles.header}>
+              <Text style={styles.title}>Grupos</Text>
+            </View>
       <FlatList
         data={grupos}
         renderItem={renderGrupoItem}
@@ -69,6 +72,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+  },
+  header: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#111827',
   },
   listContainer: {
     padding: 16,

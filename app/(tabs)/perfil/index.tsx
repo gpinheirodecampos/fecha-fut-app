@@ -2,12 +2,14 @@ import React from 'react';
 import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Switch } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Settings } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
 import PlayerAvatar from '@/components/PlayerAvatar';
 import GroupAvatar from '@/components/GroupAvatar';
 import { gruposAtivos } from '@/constants/mockData';
 
 export default function PerfilScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const [notificacoesJogos, setNotificacoesJogos] = React.useState(true);
   const [novosGrupos, setNovosGrupos] = React.useState(false);
   
@@ -32,7 +34,10 @@ export default function PerfilScreen() {
           <Text style={styles.userName}>{usuario.nome}</Text>
           <Text style={styles.userPosition}>{usuario.posicao}</Text>
           
-          <TouchableOpacity style={styles.editButton}>
+          <TouchableOpacity 
+            style={styles.editButton}
+            onPress={() => router.push('/perfil/editar')}
+          >
             <Settings size={16} color="#6B7280" style={styles.editIcon} />
             <Text style={styles.editButtonText}>Editar perfil</Text>
           </TouchableOpacity>

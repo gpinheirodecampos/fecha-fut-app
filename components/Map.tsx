@@ -31,8 +31,9 @@ type MapProps = {
   showUserLocation?: boolean;
 };
 
-// Estilo personalizado para um mapa mais limpo, sem muitos pontos de interesse
+// Estilo personalizado para um mapa mais limpo, sem pontos de interesse e estabelecimentos
 const mapStyle = [
+  // Ocultar todos os pontos de interesse
   {
     "featureType": "poi",
     "elementType": "all",
@@ -42,24 +43,37 @@ const mapStyle = [
       }
     ]
   },
+  // Mostrar apenas parques de forma simplificada
   {
     "featureType": "poi.park",
-    "elementType": "all",
+    "elementType": "geometry",
     "stylers": [
       {
         "visibility": "simplified"
       }
     ]
   },
+  // Ocultar rótulos de parques
+  {
+    "featureType": "poi.park",
+    "elementType": "labels",
+    "stylers": [
+      {
+        "visibility": "off"
+      }
+    ]
+  },
+  // Ocultar pontos de trânsito (estações, pontos de ônibus, etc)
   {
     "featureType": "transit",
     "elementType": "all",
     "stylers": [
       {
-        "visibility": "simplified"
+        "visibility": "off"
       }
     ]
   },
+  // Simplificar paisagens urbanas
   {
     "featureType": "landscape.man_made",
     "elementType": "all",
@@ -69,6 +83,7 @@ const mapStyle = [
       }
     ]
   },
+  // Simplificar rótulos de ruas
   {
     "featureType": "road",
     "elementType": "labels",
@@ -78,15 +93,17 @@ const mapStyle = [
       }
     ]
   },
+  // Simplificar ou ocultar elementos de rodovias
   {
     "featureType": "road.highway",
     "elementType": "labels",
     "stylers": [
       {
-        "visibility": "simplified"
+        "visibility": "off"
       }
     ]
   },
+  // Manter apenas ruas principais visíveis
   {
     "featureType": "road.arterial",
     "elementType": "labels",
@@ -96,6 +113,7 @@ const mapStyle = [
       }
     ]
   },
+  // Estilizar água para ser mais clara
   {
     "featureType": "water",
     "elementType": "all",
@@ -105,12 +123,57 @@ const mapStyle = [
       }
     ]
   },
+  // Simplificar nomes de localidades administrativas
   {
     "featureType": "administrative.locality",
     "elementType": "labels",
     "stylers": [
       {
         "visibility": "simplified"
+      }
+    ]
+  },
+  // Ocultar estabelecimentos comerciais
+  {
+    "featureType": "poi.business",
+    "stylers": [
+      {
+        "visibility": "off"
+      }
+    ]
+  },
+  // Ocultar pontos de serviço
+  {
+    "featureType": "poi.government",
+    "stylers": [
+      {
+        "visibility": "off"
+      }
+    ]
+  },
+  {
+    "featureType": "poi.medical",
+    "stylers": [
+      {
+        "visibility": "off"
+      }
+    ]
+  },
+  {
+    "featureType": "poi.school",
+    "stylers": [
+      {
+        "visibility": "off"
+      }
+    ]
+  },
+  // Simplificar rótulos de estradas
+  {
+    "featureType": "road",
+    "elementType": "labels.icon",
+    "stylers": [
+      {
+        "visibility": "off"
       }
     ]
   }
@@ -132,8 +195,7 @@ const Map = forwardRef<MapHandles, MapProps>(({
   const [region, setRegion] = useState<Region>(initialRegion);
   
   const mapRef = useRef<MapView>(null);
-  
-  // Expose functions to parent components
+    // Expose functions to parent components
   useImperativeHandle(ref, () => ({
     moveToUserLocation: () => {
       if (location) {
@@ -147,48 +209,200 @@ const Map = forwardRef<MapHandles, MapProps>(({
     },
     moveToRegion: (region: Region) => {
       mapRef.current?.animateToRegion(region, 1000);
-    },
-    fitToMarkers: () => {
-      if (markers.length > 0 && mapRef.current) {
-        mapRef.current.fitToSuppliedMarkers(
-          markers.map(marker => marker.id),
-          {
-            edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
-            animated: true,
-          }
-        );
-      }
-    }
-  }));
-  
-  useEffect(() => {
-    (async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        setErrorMsg('Permission to access location was denied');
-        return;
-      }
-
-      try {
-        let location = await Location.getCurrentPositionAsync({});
-        setLocation(location);
+    },    fitToMarkers: () => {
+      if (markers.length === 0) {
+        console.log("No markers to fit");
         
-        if (showUserLocation) {
-          const newRegion = {
+        // Se não temos marcadores mas temos a localização do usuário, centralizar lá
+        if (location) {
+          mapRef.current?.animateToRegion({
             latitude: location.coords.latitude,
             longitude: location.coords.longitude,
-            latitudeDelta: 0.01,
-            longitudeDelta: 0.01,
-          };
-          setRegion(newRegion);
-          mapRef.current?.animateToRegion(newRegion, 1000);
+            latitudeDelta: 0.02,
+            longitudeDelta: 0.02,
+          }, 500);
+        }
+        return;
+      }
+      
+      try {
+        // Abordagem manual para calcular a região que contém todos os marcadores
+        const latitudes = markers.map(m => m.coordinate.latitude);
+        const longitudes = markers.map(m => m.coordinate.longitude);
+        
+        const minLat = Math.min(...latitudes);
+        const maxLat = Math.max(...latitudes);
+        const minLong = Math.min(...longitudes);
+        const maxLong = Math.max(...longitudes);
+        
+        const midLat = (minLat + maxLat) / 2;
+        const midLong = (minLong + maxLong) / 2;
+        
+        // Calcular delta para incluir todos os marcadores com margem
+        const latDelta = Math.max(0.02, (maxLat - minLat) * 1.5);
+        const longDelta = Math.max(0.02, (maxLong - minLong) * 1.5);
+        
+        const region = {
+          latitude: midLat,
+          longitude: midLong,
+          latitudeDelta: latDelta,
+          longitudeDelta: longDelta,
+        };
+        
+        console.log("Animating to region:", region);
+        
+        // Animar para a região calculada
+        if (mapRef.current) {
+          mapRef.current.animateToRegion(region, 500);
         }
       } catch (error) {
-        console.error("Error getting location:", error);
-        setErrorMsg('Failed to get current location');
+        console.error("Error fitting to markers:", error);
       }
-    })();
-  }, []);
+    }
+  }));    // Função para centralizar no marcadores
+    const centerOnMarkers = () => {
+      if (markers.length === 0) return;
+      
+      try {
+        const latitudes = markers.map(m => m.coordinate.latitude);
+        const longitudes = markers.map(m => m.coordinate.longitude);
+        
+        const minLat = Math.min(...latitudes);
+        const maxLat = Math.max(...latitudes);
+        const minLong = Math.min(...longitudes);
+        const maxLong = Math.max(...longitudes);
+        
+        const midLat = (minLat + maxLat) / 2;
+        const midLong = (minLong + maxLong) / 2;
+        
+        // Calcular delta para incluir todos os marcadores
+        const latDelta = Math.max(0.02, (maxLat - minLat) * 1.5); // 50% de margem, mínimo de 0.02
+        const longDelta = Math.max(0.02, (maxLong - minLong) * 1.5);
+        
+        const markersRegion = {
+          latitude: midLat,
+          longitude: midLong,
+          latitudeDelta: latDelta,
+          longitudeDelta: longDelta,
+        };
+        
+        setRegion(markersRegion);
+        
+        // Aplicar região ao mapa com pequeno atraso para garantir que o componente está pronto
+        setTimeout(() => {
+          mapRef.current?.animateToRegion(markersRegion, 500);
+        }, 300);
+      } catch (error) {
+        console.error("Error centering on markers:", error);
+      }
+    };
+
+    // Efeito para obter localização e inicializar o mapa
+    useEffect(() => {
+      let isMounted = true; // Flag para evitar atualizações de estado após desmontagem
+      
+      (async () => {
+        // Primeiro, tentamos centralizar nos marcadores se disponíveis
+        if (markers.length > 0) {
+          centerOnMarkers();
+        }
+
+        // Em paralelo, obtemos a localização do usuário
+        try {
+          let { status } = await Location.requestForegroundPermissionsAsync();
+          if (status !== 'granted') {
+            setErrorMsg('Permission to access location was denied');
+            return;
+          }
+
+          let userLocation = await Location.getCurrentPositionAsync({});
+          
+          // Verificar se o componente ainda está montado
+          if (isMounted) {
+            setLocation(userLocation);
+            
+            // Se não temos marcadores, centralizamos na localização do usuário
+            if (markers.length === 0 && showUserLocation) {
+              const newRegion = {
+                latitude: userLocation.coords.latitude,
+                longitude: userLocation.coords.longitude,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01,
+              };
+              setRegion(newRegion);
+              
+              // Aplicar região ao mapa com pequeno atraso
+              setTimeout(() => {
+                mapRef.current?.animateToRegion(newRegion, 500);
+              }, 300);
+            }
+          }
+        } catch (error) {
+          console.error("Error getting location:", error);
+          if (isMounted) {
+            setErrorMsg('Failed to get current location');
+          }
+        }
+      })();
+      
+      return () => {
+        isMounted = false; // Limpar flag quando o componente desmonta
+      };
+    }, []);  // Usamos um ref para controlar a montagem inicial do componente
+  const isInitialMount = useRef(true);
+  const prevMarkersLength = useRef(markers.length);
+  
+  // Ajustamos a visualização quando os marcadores mudam
+  useEffect(() => {
+    // Na primeira montagem, já tratamos no outro useEffect
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      prevMarkersLength.current = markers.length;
+      return;
+    }
+    
+    // Verificar se realmente houve mudança no número de marcadores
+    // para evitar ajustes desnecessários
+    if (prevMarkersLength.current !== markers.length) {
+      console.log("Markers count changed from", prevMarkersLength.current, "to", markers.length);
+      prevMarkersLength.current = markers.length;
+      
+      // Delay para garantir que a UI foi atualizada
+      setTimeout(() => {
+        if (markers.length > 0) {
+          // Usar nossa própria implementação ao invés de fitToSuppliedMarkers
+          try {
+            const latitudes = markers.map(m => m.coordinate.latitude);
+            const longitudes = markers.map(m => m.coordinate.longitude);
+            
+            const minLat = Math.min(...latitudes);
+            const maxLat = Math.max(...latitudes);
+            const minLong = Math.min(...longitudes);
+            const maxLong = Math.max(...longitudes);
+            
+            const midLat = (minLat + maxLat) / 2;
+            const midLong = (minLong + maxLong) / 2;
+            
+            const latDelta = Math.max(0.02, (maxLat - minLat) * 1.5);
+            const longDelta = Math.max(0.02, (maxLong - minLong) * 1.5);
+            
+            const region = {
+              latitude: midLat,
+              longitude: midLong,
+              latitudeDelta: latDelta,
+              longitudeDelta: longDelta,
+            };
+            
+            if (mapRef.current) {
+              mapRef.current.animateToRegion(region, 500);
+            }
+          } catch (error) {
+            console.error("Error updating view for markers:", error);
+          }
+        }
+      }, 300);
+    }
+  }, [markers]);
 
   // Get marker color based on quadra type
   const getMarkerColor = (type?: QuadraType, available?: boolean) => {
@@ -205,7 +419,6 @@ const Map = forwardRef<MapHandles, MapProps>(({
         return '#F59E0B'; // Laranja (padrão)
     }
   };
-
   return (
     <View style={styles.container}>
       <MapView
@@ -222,7 +435,10 @@ const Map = forwardRef<MapHandles, MapProps>(({
         showsIndoors={false}
         showsPointsOfInterest={false}
         rotateEnabled={true}
+        pitchEnabled={false}
         customMapStyle={mapStyle}
+        toolbarEnabled={false}
+        zoomControlEnabled={false}
       >
         {markers.map((marker) => (
           <Marker
@@ -237,25 +453,29 @@ const Map = forwardRef<MapHandles, MapProps>(({
               { backgroundColor: getMarkerColor(marker.type, marker.available) }
             ]}>
               <MapPin size={18} color="#FFFFFF" />
-            </View>
-            <Callout tooltip>
+            </View>            <Callout tooltip>
               <View style={styles.calloutContainer}>
-                <Text style={styles.calloutTitle}>{marker.title}</Text>
-                <Text style={styles.calloutDescription}>{marker.description}</Text>
-                {marker.type && (
+                <Text style={styles.calloutTitle}>
+                  {marker.title || ''}
+                </Text>
+                <Text style={styles.calloutDescription}>
+                  {marker.description || ''}
+                </Text>
+                {marker.type ? (
                   <Text style={styles.calloutType}>
                     {marker.type === 'society' ? 'Society' : 
-                     marker.type === 'futsal' ? 'Futsal' : 'Gramado'}
+                     marker.type === 'futsal' ? 'Futsal' : 
+                     marker.type === 'gramado' ? 'Gramado' : ''}
                   </Text>
-                )}
-                {marker.available !== undefined && (
+                ) : null}
+                {marker.available !== undefined ? (
                   <Text style={[
                     styles.calloutAvailability,
                     { color: marker.available ? '#10B981' : '#EF4444' }
                   ]}>
                     {marker.available ? 'Disponível' : 'Indisponível'}
                   </Text>
-                )}
+                ) : null}
               </View>
             </Callout>
           </Marker>

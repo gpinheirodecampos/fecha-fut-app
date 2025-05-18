@@ -1,9 +1,10 @@
 import React from 'react';
-import { StyleSheet, View, Text, Image, ScrollView, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Text, Image, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowLeft, MapPin, Calendar, Users } from 'lucide-react-native';
+import { ArrowLeft, MapPin, Calendar, Users, Navigation } from 'lucide-react-native';
 import { quadras, gruposPorQuadra } from '@/constants/mockData';
+import Map from '@/components/Map';
 
 export default function QuadraDetailsScreen() {
   const { id } = useLocalSearchParams();
@@ -11,8 +12,9 @@ export default function QuadraDetailsScreen() {
   const router = useRouter();
   
   // Find the quadra with the matching id
-  const quadra = quadras.find(q => q.id === id);
-  const grupos = gruposPorQuadra[id] || [];
+  const quadraId = typeof id === 'string' ? id : Array.isArray(id) ? id[0] : '1';
+  const quadra = quadras.find(q => q.id === quadraId);
+  const grupos = gruposPorQuadra[quadraId as keyof typeof gruposPorQuadra] || [];
   
   if (!quadra) {
     return (
@@ -21,6 +23,33 @@ export default function QuadraDetailsScreen() {
       </View>
     );
   }
+
+  // Default coordinates for Rio de Janeiro
+  const defaultLat = -22.9068;
+  const defaultLng = -43.1729;
+  
+  const quadraLocation = {
+    latitude: quadra.latitude || defaultLat,
+    longitude: quadra.longitude || defaultLng,
+    latitudeDelta: 0.01,
+    longitudeDelta: 0.01,
+  };
+
+  const mapMarkers = [{
+    id: quadra.id.toString(),
+    coordinate: {
+      latitude: quadra.latitude || defaultLat,
+      longitude: quadra.longitude || defaultLng,
+    },
+    title: quadra.nome,
+    description: `${quadra.tipo} - ${quadra.endereco}`
+  }];
+  
+  // Function to open the location in maps app
+  const openInMaps = () => {
+    // In a real app, this would open the native maps app with the location
+    console.log('Abrindo no mapa:', quadra.nome);
+  };
   
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -53,55 +82,57 @@ export default function QuadraDetailsScreen() {
           )}
           {quadra.tipo === 'futsal' && (
             <Image 
-              source={{ uri: 'https://images.pexels.com/photos/3574062/pexels-photo-3574062.jpeg' }}
+              source={{ uri: 'https://images.pexels.com/photos/186239/pexels-photo-186239.jpeg' }}
               style={styles.quadraImage}
               resizeMode="cover"
             />
           )}
-          <Text style={styles.imageText}>Imagem da quadra</Text>
         </View>
         
         <View style={styles.infoContainer}>
-          <View style={styles.infoRow}>
-            <MapPin size={18} color="#6B7280" style={styles.infoIcon} />
-            <Text style={styles.infoText}>Endereço</Text>
+          <Text style={styles.quadraNome}>{quadra.nome}</Text>
+          <View style={styles.detailRow}>
+            <MapPin size={18} color="#6B7280" style={styles.detailIcon} />
+            <Text style={styles.detailText}>{quadra.endereco}</Text>
           </View>
-          <Text style={styles.addressText}>{quadra.endereco}</Text>
-        </View>
-        
-        <View style={styles.gruposContainer}>
-          <Text style={styles.gruposTitle}>Grupos nesta quadra</Text>
+          <View style={styles.detailRow}>
+            <Calendar size={18} color="#6B7280" style={styles.detailIcon} />
+            <Text style={styles.detailText}>Disponível {quadra.horarios}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Users size={18} color="#6B7280" style={styles.detailIcon} />
+            <Text style={styles.detailText}>{quadra.capacidade} jogadores por time</Text>
+          </View>
           
-          {grupos.map(grupo => {
-            const vagas = grupo.vagas > 0 
-              ? <Text style={styles.vagas}>{grupo.vagas} vagas</Text>
-              : <Text style={styles.lotado}>Lotado</Text>;
-              
-            return (
-              <TouchableOpacity 
-                key={grupo.id}
-                style={styles.grupoCard}
-                onPress={() => router.push(`/(tabs)/grupos/${grupo.id}`)}
-              >
-                <View style={styles.grupoHeader}>
-                  <Text style={styles.grupoName}>{grupo.nome}</Text>
-                  {vagas}
-                </View>
-                
-                <View style={styles.grupoInfoContainer}>
-                  <View style={styles.grupoInfoRow}>
-                    <Calendar size={16} color="#6B7280" style={styles.grupoInfoIcon} />
-                    <Text style={styles.grupoInfoText}>{grupo.dia} às {grupo.horario}</Text>
-                  </View>
-                  
-                  <View style={styles.grupoInfoRow}>
-                    <Users size={16} color="#6B7280" style={styles.grupoInfoIcon} />
-                    <Text style={styles.grupoInfoText}>{grupo.confirmados} confirmados</Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            );
-          })}
+          <Text style={styles.sectionTitle}>Localização</Text>
+          <View style={styles.mapContainer}>
+            <Map
+              initialRegion={quadraLocation}
+              markers={mapMarkers}
+              showUserLocation={true}
+            />
+            <TouchableOpacity 
+              style={styles.directionsButton}
+              onPress={openInMaps}
+            >
+              <Navigation size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
+              <Text style={styles.directionsButtonText}>Como Chegar</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <Text style={styles.sectionTitle}>Grupos que jogam aqui</Text>
+          {grupos.length > 0 ? grupos.map((grupo: any) => (
+            <TouchableOpacity
+              key={grupo.id}
+              style={styles.grupoCard}
+              onPress={() => router.push(`/grupos/${grupo.id}`)}
+            >
+              <Text style={styles.grupoNome}>{grupo.nome}</Text>
+              <Text style={styles.grupoInfoText}>{grupo.membros?.length || 0} membros • {grupo.horario}</Text>
+            </TouchableOpacity>
+          )) : (
+            <Text style={styles.emptyMessage}>Nenhum grupo joga nesta quadra ainda.</Text>
+          )}
         </View>
       </ScrollView>
     </View>
@@ -157,23 +188,52 @@ const styles = StyleSheet.create({
     borderBottomWidth: 8,
     borderBottomColor: '#F3F4F6',
   },
-  infoRow: {
+  quadraNome: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 8,
+  },
+  detailRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 4,
   },
-  infoIcon: {
+  detailIcon: {
     marginRight: 8,
   },
-  infoText: {
+  detailText: {
     fontSize: 14,
     fontWeight: '500',
     color: '#374151',
   },
-  addressText: {
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+    marginVertical: 16,
+  },
+  mapContainer: {
+    height: 200,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 16,
+  },
+  directionsButton: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#10B981',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+  },
+  directionsButtonText: {
+    color: '#FFFFFF',
     fontSize: 14,
-    color: '#6B7280',
-    marginLeft: 26,
+    fontWeight: '500',
   },
   gruposContainer: {
     padding: 16,
@@ -203,41 +263,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  grupoName: {
+  grupoNome: {
     fontSize: 16,
     fontWeight: '600',
     color: '#111827',
-  },
-  vagas: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#10B981',
-    backgroundColor: '#ECFDF5',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 16,
-  },
-  lotado: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#EF4444',
-    backgroundColor: '#FEF2F2',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 16,
-  },
-  grupoInfoContainer: {
-    gap: 8,
-  },
-  grupoInfoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  grupoInfoIcon: {
-    marginRight: 8,
+    marginBottom: 4,
   },
   grupoInfoText: {
     fontSize: 14,
     color: '#6B7280',
   },
+  emptyMessage: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginVertical: 16,
+  }
 });

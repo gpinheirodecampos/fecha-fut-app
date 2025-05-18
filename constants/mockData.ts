@@ -8,6 +8,10 @@ export const quadras = [
     endereco: 'Rua das Palmeiras, 123', 
     tipo: 'society',
     distancia: '0.8',
+    latitude: -22.9068,
+    longitude: -43.1729,
+    horarios: 'Segunda a Sábado, 08:00-22:00',
+    capacidade: 7,
   },
   { 
     id: '2', 
@@ -15,6 +19,10 @@ export const quadras = [
     endereco: 'Av. Presidente Castelo Branco', 
     tipo: 'gramado',
     distancia: '1.2',
+    latitude: -22.9121,
+    longitude: -43.2302,
+    horarios: 'Todos os dias, 09:00-22:00',
+    capacidade: 11,
   },
   { 
     id: '3', 
@@ -22,6 +30,10 @@ export const quadras = [
     endereco: 'Praça da República, s/n', 
     tipo: 'futsal',
     distancia: '1.5',
+    latitude: -22.9079,
+    longitude: -43.1823,
+    horarios: 'Segunda a Sexta, 14:00-22:00',
+    capacidade: 5,
   },
   { 
     id: '4', 
@@ -29,6 +41,10 @@ export const quadras = [
     endereco: 'Av. Brasil, 1500', 
     tipo: 'society',
     distancia: '2.3',
+    latitude: -22.8971,
+    longitude: -43.2018,
+    horarios: 'Todos os dias, 08:00-23:00',
+    capacidade: 6,
   },
   { 
     id: '5', 
@@ -36,6 +52,10 @@ export const quadras = [
     endereco: 'Rua dos Esportes, 300', 
     tipo: 'gramado',
     distancia: '3.1',
+    latitude: -22.9220,
+    longitude: -43.2102,
+    horarios: 'Sábado e Domingo, 08:00-18:00',
+    capacidade: 7,
   },
 ];
 

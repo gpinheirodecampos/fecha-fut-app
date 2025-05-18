@@ -1,9 +1,9 @@
 import React from 'react';
 import { Stack, Slot } from 'expo-router';
 
-export default function GruposLayout() {  
+export default function QuadrasLayout() {
   return (
-    <Stack 
+    <Stack
       screenOptions={{
         headerShown: false,
         headerTitleStyle: {
@@ -14,22 +14,17 @@ export default function GruposLayout() {
         headerShadowVisible: false,
       }}
     >
-      <Stack.Screen 
-        name="index" 
+      <Stack.Screen
+        name="[id]"
         options={{
           headerShown: false,
-          title: "Grupos",
-          headerTitleStyle: {
-            fontSize: 24,
-            fontWeight: '700',
-          },
-        }} 
+        }}
       />
-      <Stack.Screen 
-        name="[id]" 
+      <Stack.Screen
+        name="proximas"
         options={{
           headerShown: false,
-          title: "Detalhes do Grupo",
+          title: "Quadras Próximas",
         }}
       />
       <Slot />

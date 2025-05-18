@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tabs } from 'expo-router';
+import { Tabs, Slot } from 'expo-router';
 import { Map, Users, User } from 'lucide-react-native';
 
 export default function TabLayout() {
@@ -50,6 +50,7 @@ export default function TabLayout() {
           )
         }}
       />
+      <Slot />
     </Tabs>
   );
 }

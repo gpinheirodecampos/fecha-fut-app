@@ -12,10 +12,10 @@ export default function RootLayout() {
         <Stack.Screen name="index" />
         <Stack.Screen name="login" />
         <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="quadras/proximas" />
-        <Stack.Screen name="quadras/[id]" options={{ 
-          animation: 'slide_from_right',
-        }} />
+        <Stack.Screen
+          name="quadras"
+          options={{ animation: 'slide_from_right' }}
+        />
         <Stack.Screen name="+not-found" />
       </Stack>
       <StatusBar style="auto" />
